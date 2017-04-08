@@ -12,7 +12,10 @@ LANE_Y = 120 / 12
 
 EMPTY_LANE = LANE_X * LANE_Y
 
-print(RACK_X, RACK_Y, LANE_X, LANE_Y)
+MAX_SQ_FT_COST = 1.0
+MIN_SQ_FT_COST = 0.95
+
+PROFIT_MARGIN = .2
 
 def sq_ft(x, y):
 	return x * y
@@ -62,7 +65,6 @@ def get_racks_y(y):
 	# 		lane_tup[0] -= lane
 
 	#METHOD 1: NO RACKS ON EDGES
-
 	empty_lane_1 = 0
 	rack_1 = 0
 	lane_left_1 = y
@@ -248,6 +250,7 @@ def get_racks(total_sq_ft):
 	min_x =int(max_min_x["min_x"])
 
 	for x in range(min_x, max_x+1):
+		rack_dict = {}
 
 		# Testing if rounding x up or down will give sq ft closer
 		# to total sq ft
@@ -261,11 +264,27 @@ def get_racks(total_sq_ft):
 			y = y1
 
 		racks = get_best_racks(x, y)
-		y_racks_dict = racks["y_racks_dict"]
-		x_racks_dict = racks["x_racks_dict"]
-		total_racks_ground = y_racks_dict["rack"] * x_racks_dict["rack"]
-		total_racks = total_racks_ground * level_racks
-		total_pallets = 2 * total_racks
-		total_pallet_sq_ft = total_pallets * PALLET_SPACE
+		rack_dict["y_racks_dict"] = copy.deepcopy(racks["y_racks_dict"])
+		rack_dict["x_racks_dict"] = copy.deepcopy(racks["x_racks_dict"])
+		rack_dict["total_racks_ground"] = rack_dict["y_racks_dict"]["rack"] * rack_dict["x_racks_dict"]["rack"]
+		rack_dict["total_racks"] = rack_dict["total_racks_ground"] * level_racks
+		rack_dict["total_pallets"] = 2 * rack_dict["total_racks"]
+		rack_dict["total_pallet_sq_ft"] = rack_dict["total_pallets"] * PALLET_SPACE
+		rack_dict["total_sq_ft"] = total_sq_ft
+		rack_dict["min_warehouse_total_cost"] = total_sq_ft * MIN_SQ_FT_COST
+		rack_dict["max_warehouse_total_cost"] = total_sq_ft * MAX_SQ_FT_COST
+		rack_dict["max_sq_ft_charge"] = (rack_dict["max_warehouse_total_cost"] * (1 + PROFIT_MARGIN)) / rack_dict["total_pallet_sq_ft"]
+		rack_dict["min_sq_ft_charge"] = (rack_dict["min_warehouse_total_cost"] * (1 + PROFIT_MARGIN)) / rack_dict["total_pallet_sq_ft"]
 
-		print(x, y, x* y, "Total pallet sq ft", total_pallet_sq_ft, total_racks, x_racks_dict, y_racks_dict)
+		racks_dict[x] = rack_dict
+
+		print(rack_dict)
+	# print(racks_dict)
+
+def calculate_warehouse_space(rack_aisles, rack_rows, empty_lane_aisles):
+	rack_space = rack_aisles * rack_rows * RACK_SPACE
+	lanes_space = empty_lane_aisles * rack_rows * LANE_X * RACK_X
+	side_lanes_space = empty_lane_aisles * LANE_X * LANE_Y + rack_aisles * RACK_Y * LANE_X 
+
+	total_sq_ft = rack_space + lanes_space + side_lanes_space * 2
+	return total_sq_ft

@@ -28,3 +28,7 @@ import rack_space
 # print(rack_space.get_max_min_y(20000))
 
 print(rack_space.get_racks(20000))
+
+print(rack_space.get_racks(80000))
+
+print(rack_space.calculate_warehouse_space(26, 23, 27))
